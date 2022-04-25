@@ -1,9 +1,10 @@
-FROM frolvlad/alpine-glibc:alpine-3.10 as build
+FROM frolvlad/alpine-glibc:latest as build
 
-ARG TMOD_VERSION=0.11.7.8
+ENV TMOD_VERSION=0.11.8.9
 ARG TERRARIA_VERSION=1353
 
 RUN apk update &&\
+	apk upgrade &&\
     apk add --no-cache --virtual build curl unzip &&\
     apk add --no-cache -X http://dl-cdn.alpinelinux.org/alpine/edge/testing mono
 
@@ -11,18 +12,20 @@ WORKDIR /terraria-server
 
 RUN cp /usr/lib/libMonoPosixHelper.so .
 
-RUN curl -SLO "http://terraria.org/server/terraria-server-${TERRARIA_VERSION}.zip" &&\
-    unzip terraria-server-*.zip &&\
-    rm terraria-server-*.zip &&\
-    cp --verbose -a "${TERRARIA_VERSION}/Linux/." . &&\
-    rm -rf "${TERRARIA_VERSION}" &&\
-    rm TerrariaServer.bin.x86 TerrariaServer.exe
-
 RUN curl -SL "https://github.com/tModLoader/tModLoader/releases/download/v${TMOD_VERSION}/tModLoader.Linux.v${TMOD_VERSION}.tar.gz" | tar -xvz &&\
     rm -r lib tModLoader.bin.x86 tModLoaderServer.bin.x86 &&\
     chmod u+x tModLoaderServer*
 
-FROM frolvlad/alpine-glibc:alpine-3.10
+RUN mkdir 64bit &&\
+	cd 64bit &&\
+	curl -SLo tmodloader64bit.zip https://github.com/Dradonhunter11/tModLoader64bit/releases/download/v.${TMOD_VERSION}/tModLoader64bit-Linux-Server-${TMOD_VERSION}.zip &&\
+	unzip -q tmodloader64bit.zip &&\
+	rm tmodloader64bit.zip &&\
+	chmod u+x tModLoader64BitServer*
+
+RUN ls -l 64bit
+
+FROM frolvlad/alpine-glibc:latest
 
 WORKDIR /terraria-server
 COPY --from=build /terraria-server ./
